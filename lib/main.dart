@@ -40,7 +40,7 @@ class _MyHomePageState extends State<MyHomePage> {
   AutovalidateMode autovalidateMode = AutovalidateMode.disabled;
   String? searchTerm;
 
-  void submit() async {
+  void submit() {
     setState(() {
       autovalidateMode = AutovalidateMode.always;
     });
@@ -51,71 +51,94 @@ class _MyHomePageState extends State<MyHomePage> {
 
     form.save();
 
-    try {
-      // to avoid async gap warning
-      // original lint rule name is: use_build_context_synchronously
-      final navigator = Navigator.of(context);
-      await context.read<AppProvider>().getResult(searchTerm!);
-      navigator.push(
-        MaterialPageRoute(builder: (context) {
-          return const SuccessPage();
-        }),
-      );
-    } catch (e) {
-      // to avoid async gap warning
-      // original lint rule name is: use_build_context_synchronously
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) {
-          return const AlertDialog(
-            content: Text('Something went wrong'),
-          );
-        },
-      );
-    }
+    // to avoid async gap warning
+    // original lint rule name is: use_build_context_synchronously
+    // final navigator = Navigator.of(context);
+    context.read<AppProvider>().getResult(searchTerm!);
+    // navigator.push(
+    //   MaterialPageRoute(builder: (context) {
+    //     return const SuccessPage();
+    //   }),
+    // );
+
+    // to avoid async gap warning
+    // original lint rule name is: use_build_context_synchronously
+    // if (!mounted) return;
+    // showDialog(
+    //   context: context,
+    //   builder: (context) {
+    //     return const AlertDialog(
+    //       content: Text('Something went wrong'),
+    //     );
+    //   },
+    // );
   }
 
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppProvider>().state;
 
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30.0),
-          child: Form(
-            key: formKey,
-            autovalidateMode: autovalidateMode,
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                TextFormField(
-                  autofocus: true,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    label: Text('Search'),
-                    prefixIcon: Icon(Icons.search),
+    if (appState == AppState.success) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) {
+            return const SuccessPage();
+          }),
+        );
+      });
+    } else if (appState == AppState.error) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          builder: (context) {
+            return const AlertDialog(
+              content: Text('Something went wrong'),
+            );
+          },
+        );
+      });
+    }
+
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 30.0),
+            child: Form(
+              key: formKey,
+              autovalidateMode: autovalidateMode,
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  TextFormField(
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      label: Text('Search'),
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    validator: (String? value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Search term required';
+                      }
+                      return null;
+                    },
+                    onSaved: (String? value) {
+                      searchTerm = value;
+                    },
                   ),
-                  validator: (String? value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Search term required';
-                    }
-                    return null;
-                  },
-                  onSaved: (String? value) {
-                    searchTerm = value;
-                  },
-                ),
-                const SizedBox(height: 20.0),
-                ElevatedButton(
-                  onPressed: appState == AppState.loading ? null : submit,
-                  child: Text(
-                    appState == AppState.loading ? 'Loading...' : 'Get Result',
-                    style: const TextStyle(fontSize: 24.0),
+                  const SizedBox(height: 20.0),
+                  ElevatedButton(
+                    onPressed: appState == AppState.loading ? null : submit,
+                    child: Text(
+                      appState == AppState.loading ? 'Loading...' : 'Get Result',
+                      style: const TextStyle(fontSize: 24.0),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
