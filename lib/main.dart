@@ -39,6 +39,40 @@ class _MyHomePageState extends State<MyHomePage> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   AutovalidateMode autovalidateMode = AutovalidateMode.disabled;
   String? searchTerm;
+  late final AppProvider appProv;
+
+  @override
+  void initState() {
+    super.initState();
+    appProv = context.read<AppProvider>();
+    appProv.addListener(appListener);
+  }
+
+  void appListener() {
+    if (appProv.state == AppState.success) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) {
+          return const SuccessPage();
+        }),
+      );
+    } else if (appProv.state == AppState.error) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return const AlertDialog(
+            content: Text('Something went wrong'),
+          );
+        },
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    appProv.removeListener(appListener);
+    super.dispose();
+  }
 
   void submit() {
     setState(() {
@@ -78,27 +112,27 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppProvider>().state;
 
-    if (appState == AppState.success) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) {
-            return const SuccessPage();
-          }),
-        );
-      });
-    } else if (appState == AppState.error) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        showDialog(
-          context: context,
-          builder: (context) {
-            return const AlertDialog(
-              content: Text('Something went wrong'),
-            );
-          },
-        );
-      });
-    }
+    // if (appState == AppState.success) {
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     Navigator.push(
+    //       context,
+    //       MaterialPageRoute(builder: (context) {
+    //         return const SuccessPage();
+    //       }),
+    //     );
+    //   });
+    // } else if (appState == AppState.error) {
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     showDialog(
+    //       context: context,
+    //       builder: (context) {
+    //         return const AlertDialog(
+    //           content: Text('Something went wrong'),
+    //         );
+    //       },
+    //     );
+    //   });
+    // }
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
